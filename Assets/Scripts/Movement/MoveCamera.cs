@@ -9,6 +9,8 @@ public class MoveCamera : MonoBehaviour
     public Transform playerObj;
     public Transform player;
 
+    public InputManager inputMan;
+
     [Header("==========Attributes==========")]
     public float rotationSpeed;
 
@@ -23,8 +25,8 @@ public class MoveCamera : MonoBehaviour
         Vector3 viewDir = player.position - new Vector3(transform.position.x, player.position.y, transform.position.z);
         orientation.forward = viewDir.normalized;
 
-        float horizontalInput = Input.GetAxis("Horizontal");
-        float verticalInput = Input.GetAxis("Vertical");
+        float horizontalInput = inputMan.horizontalInput;
+        float verticalInput = inputMan.verticalInput;
 
         Vector3 inputDir = orientation.forward * verticalInput + orientation.right * horizontalInput;
 

@@ -49,12 +49,14 @@ public class PlayerMovement : MonoBehaviour
     Vector3 moveDirection;
 
     Rigidbody rb;
+    InputManager inputMan;
 
     [HideInInspector] public TextMeshProUGUI text_speed;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        inputMan = GetComponent<InputManager>();
         rb.freezeRotation = true;
 
         readyToJump = true;
@@ -81,26 +83,22 @@ public class PlayerMovement : MonoBehaviour
 
     private void MyInput()
     {
-        horizontalInput = Input.GetAxisRaw("Horizontal");
-        verticalInput = Input.GetAxisRaw("Vertical");
+        horizontalInput = inputMan.movVect.x;
+        verticalInput = inputMan.movVect.y;
 
         // when to jump
-        if(Input.GetKey(jumpKey) && readyToJump && jumpCoutner < maxAirJumps)
+        if (inputMan.playerInput.PlayerMovement.Jump.WasPerformedThisFrame() && readyToJump && jumpCoutner < maxAirJumps)
         {
             readyToJump = false;
             Jump();
-        }
-        if (Input.GetKeyUp(jumpKey))
-        {
             Invoke(nameof(ResetJump), jumpCooldown);
         }
 
-
-        if (Input.GetKeyDown(sprintKey))
+        if (inputMan.playerInput.PlayerMovement.Sprint.IsPressed() && grounded)
         {
             state = States.Sprinting;
         }
-        else if (Input.GetKeyUp(sprintKey))
+        else if (inputMan.playerInput.PlayerMovement.Sprint.WasReleasedThisFrame())
         {
             state = States.Moving;
         }
