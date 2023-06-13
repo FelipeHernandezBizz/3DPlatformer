@@ -28,9 +28,9 @@ public class MoveCamera : MonoBehaviour
         float horizontalInput = inputMan.horizontalInput;
         float verticalInput = inputMan.verticalInput;
 
-        Vector3 inputDir = orientation.forward * verticalInput + orientation.right * horizontalInput;
+        Vector3 inputDir = orientation.forward * verticalInput;
 
-        if (inputDir != Vector3.zero)
+        if (inputDir.y != 0)
         {
             playerObj.forward = Vector3.Slerp(playerObj.forward, inputDir.normalized, Time.deltaTime * rotationSpeed);
         }
