@@ -19,8 +19,6 @@ public class InputManager : MonoBehaviour
         playerInput.Enable();
 
         playerInput.PlayerMovement.Movement.performed += i => movVect = i.ReadValue<Vector2>();
-
-        playerInput.PlayerMovement.Jump.performed += i => Jump();
     }
 
     private void OnDisable()
@@ -42,10 +40,5 @@ public class InputManager : MonoBehaviour
     {
         horizontalInput = movVect.x;
         verticalInput = movVect.y;
-    }
-    
-    public void Jump()
-    {
-        
     }
 }
