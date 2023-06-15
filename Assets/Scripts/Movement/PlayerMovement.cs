@@ -10,16 +10,21 @@ public class PlayerMovement : MonoBehaviour
         Sprinting,
         Moving,
         Crouching,
+        Sliding,
         Air,
         Interacting
     }
 
     [Header("==========Movement==========")]
-    public float moveSpeed;
+    private float desiredMoveSpeed;
+    private float moveSpeed;
     public float sprintingSpeed;
-    public float runningSpeed;
     public float walkingSpeed;
+    public float slideSpeed;
     public float groundDrag;
+    private float lastDesiredMoveSpeed;
+    public bool isSliding;
+
     public States state;
 
     [Header("==========Jump==========")]
@@ -108,7 +113,7 @@ public class PlayerMovement : MonoBehaviour
             Invoke(nameof(ResetJump), jumpCooldown);
         }
 
-        if (inputMan.playerInput.PlayerMovement.Crouch.WasPressedThisFrame())
+        if (inputMan.playerInput.PlayerMovement.Crouch.WasPressedThisFrame() && state != States.Sprinting)
         {
             crouching = true;
             transform.localScale = new Vector3(transform.localScale.x, crouchYScale, transform.localScale.z);
@@ -129,31 +134,50 @@ public class PlayerMovement : MonoBehaviour
 
     private void StateHandler()
     {
-        //Crouching
-        if (crouching && grounded)
+        if (isSliding)
         {
-            underRoof = Physics.Raycast(transform.position, transform.up, playerHeight * 0.5f + 0.2f, whatIsGround);
+            state = States.Sliding;
+
+            if (OnSlope() && rb.velocity.y < 0.1f) { desiredMoveSpeed = slideSpeed; }
+            else { desiredMoveSpeed = sprintingSpeed; }
+        }
+
+        //Crouching
+        else if (crouching && grounded)
+        {
+            SetUnderRoof();
             state = States.Crouching;
-            moveSpeed = crouchSpeed;
+            desiredMoveSpeed = crouchSpeed;
         }
 
         //Sprinting
         else if (inputMan.playerInput.PlayerMovement.Sprint.IsPressed() && grounded && !underRoof)
         {
             state = States.Sprinting;
-            moveSpeed = sprintingSpeed;
+            desiredMoveSpeed = sprintingSpeed;
         }
 
         else if (grounded && !underRoof)
         {
             state = States.Moving;
-            moveSpeed = walkingSpeed;
+            desiredMoveSpeed = walkingSpeed;
         }
 
         else
         {
             state = States.Air;
         }
+
+        if (Mathf.Abs(desiredMoveSpeed - lastDesiredMoveSpeed) > 1f && moveSpeed != 0) 
+        {
+            StopAllCoroutines();
+            StartCoroutine(SmoothLerpSeed());
+        }
+        else
+        {
+            moveSpeed = desiredMoveSpeed;
+        }
+        lastDesiredMoveSpeed = desiredMoveSpeed;
     }
 
     private void MovePlayer()
@@ -164,7 +188,7 @@ public class PlayerMovement : MonoBehaviour
         //On Slope
         if (OnSlope() && !exitSlope)
         {
-            rb.AddForce(SlopeDirection() * moveSpeed * 10, ForceMode.Force);
+            rb.AddForce(SlopeDirection(moveDirection) * moveSpeed * 10, ForceMode.Force);
             if (rb.velocity.y > 0) { rb.AddForce(Vector3.down * 80, ForceMode.Force); }
         }
 
@@ -218,7 +242,7 @@ public class PlayerMovement : MonoBehaviour
         exitSlope = false;
     }
 
-    private bool OnSlope()
+    public bool OnSlope()
     {
         if (Physics.Raycast(transform.position, -transform.up, out slopeHit, playerHeight * 0.5f + 0.3f, whatIsGround))
         {
@@ -228,8 +252,34 @@ public class PlayerMovement : MonoBehaviour
         else { return false; }
     }
 
-    private Vector3 SlopeDirection()
+    public Vector3 SlopeDirection(Vector3 direction)
     {
-        return Vector3.ProjectOnPlane(moveDirection, slopeHit.normal).normalized;
+        return Vector3.ProjectOnPlane(direction, slopeHit.normal).normalized;
+    }
+
+    public IEnumerator SmoothLerpSeed()
+    {
+        float time = 0;
+        float diff = Mathf.Abs(desiredMoveSpeed - moveSpeed);
+        float startVal = moveSpeed;
+
+        while (time < diff)
+        {
+            moveSpeed = Mathf.Lerp(startVal, desiredMoveSpeed, time/diff);
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        moveSpeed = desiredMoveSpeed;
+    }
+
+    public void SetUnderRoof()
+    {
+        underRoof = Physics.Raycast(transform.position, transform.up, playerHeight * 0.5f + 0.2f, whatIsGround);
+    }
+
+    public float GetStartScale()
+    {
+        return startYScale;
     }
 }
